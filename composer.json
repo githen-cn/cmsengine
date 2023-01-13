@@ -1,0 +1,22 @@
+{
+    "name": "githen/cmsengine",
+    "description": "CMS生成HTML模板引擎",
+    "type": "library",
+    "autoload": {
+        "psr-4": {
+            "Githen\\Cmsengine\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "githen"
+        }
+    ],
+    "require": {},
+    "repositories": {
+        "githen": {
+            "type": "path",
+            "url": "/Users/guozhiwei/dev/jiaoyu/cmsengine"
+        }
+    }
+}
