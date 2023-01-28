@@ -1,10 +1,11 @@
 {
     "name": "githen/cmsengine",
     "description": "CMS生成HTML模板引擎",
+    "license": "MIT",
     "type": "library",
     "autoload": {
         "psr-4": {
-            "Githen\\Cmsengine\\": "src/"
+            "Githen\\CmsEngine\\": "src/"
         }
     },
     "authors": [
@@ -12,11 +13,14 @@
             "name": "githen"
         }
     ],
-    "require": {},
-    "repositories": {
-        "githen": {
-            "type": "path",
-            "url": "/Users/guozhiwei/dev/jiaoyu/cmsengine"
+    "require": {
+        "illuminate/support": "^6.20"
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Githen\\CmsEngine\\CmsProvider"
+            ]
         }
     }
 }
