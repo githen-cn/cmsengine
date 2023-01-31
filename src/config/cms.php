@@ -8,12 +8,20 @@ return [
     |
     */
     'config' => [
-        'namespace' => 'dede',
+        'namespace' => 'eol',
         'tagstart' => '{',
         'tagend' => '}',
         'tagmaxlen' => 60,
         'tolow' => TRUE,
         'home' => storage_path('template'),
+    ],
+
+    'tags' => [
+        'field' => [
+//            'site' => classname
+        ],
+        'list' => [],
+        'page' => [],
     ],
 
 ];

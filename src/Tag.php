@@ -1,6 +1,6 @@
 <?php
 
-namespace Githen\CmsEngine\Lib;
+namespace Githen\CmsEngine;
 
 use Githen\CmsEngine\Exceptions\HtmlPraseException;
 
@@ -134,6 +134,21 @@ class Tag
         if ($field){
             $this->attribute[$field] = trim($val);
         }
+    }
+
+    /**
+     * 获取属性值
+     */
+    public function getAttribute($key)
+    {
+        return $this->attribute[$key] ?? null;
+    }
+    /**
+     * 获取属性值
+     */
+    public function getAttributes()
+    {
+        return $this->attribute;
     }
 
     /**

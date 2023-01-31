@@ -4,7 +4,8 @@ namespace Githen\CmsEngine;
 
 
 use Githen\CmsEngine\Exceptions\HtmlPraseException;
-use Githen\CmsEngine\Lib\Tag;
+use Githen\CmsEngine\Tag;
+use Illuminate\Support\Facades\Storage;
 use function GuzzleHttp\Psr7\str;
 
 /**
@@ -13,6 +14,11 @@ use function GuzzleHttp\Psr7\str;
  */
 class HtmlPrase
 {
+    /**
+     * @var object
+     */
+    private $app;
+
     /**
      * 模板文件目录
      * @var stirng
@@ -36,6 +42,11 @@ class HtmlPrase
      * @var string
      */
     private $tagEnd = '';
+    /**
+     * 标记是否检测
+     * @var bool
+     */
+    private $isCheck = true;
 
     /**
      * 标签最大长度
@@ -79,15 +90,30 @@ class HtmlPrase
     private $tagNum = 0;
 
     /**
+     * 中转参数
+     * @val array
+     */
+    private $linkData = [];
+
+    /**
+     * 内置标签
+     */
+    private $inTags = ['include'];
+
+    /**
      * 构建引擎所需要的配置信息
      *
      * @param array
      *
      * @return void
      */
-    function __construct($options = [])
+    function __construct($app)
     {
-        $this->setConfigs($options);
+        $this->app = $app;
+
+        // 加载配置
+        $config = $this->app->make('config')->get('cms.config', []);
+        $this->setConfigs($config);
     }
 
     /**
@@ -111,6 +137,8 @@ class HtmlPrase
 
         $this->tagMaxLen = $options['tagmaxlen'] ?? 60;
         $this->toLow     = $options['tolow']     ?? TRUE;
+
+        return $this;
     }
 
     /**
@@ -119,14 +147,19 @@ class HtmlPrase
      * @param string $name  标记名称
      * @param string $start 标记开始字符
      * @param string $end   标记结束字符
+     * @param bool   $isCheck 标签检测
      *
      * @return void
      */
-    public function setNameSpace($name, $strat = '{', $end = '}')
+    public function setNameSpace($name, $strat = '{', $end = '}', $isCheck= true)
     {
         $this->nameSpace = $name;
         $this->tagStart  = $strat;
         $this->tagEnd    = $end;
+        $this->isCheck   = $isCheck;
+
+        return $this;
+
     }
 
     /**
@@ -136,6 +169,26 @@ class HtmlPrase
     public function setHomedir($dir)
     {
         $this->homeDir = $dir;
+        return $this;
+    }
+
+    /**
+     * 设置连接数据
+     *
+     */
+    public function setLinkData($data)
+    {
+        $this->linkData = $data;
+        return $this;
+    }
+
+    /**
+     * 获取连接数据
+     *
+     */
+    public function getLinkData()
+    {
+        return $this->linkData;
     }
 
     /**
@@ -148,6 +201,8 @@ class HtmlPrase
         $this->sourceHtml = '';
         $this->tags = [];
         $this->tagNum = 0;
+
+        return $this;
     }
 
     /**
@@ -191,7 +246,7 @@ class HtmlPrase
             return;
         }
 
-        $this->loadSource(file_get_contents($path));
+        return $this->loadSource(file_get_contents($path));
     }
 
     /**
@@ -204,7 +259,7 @@ class HtmlPrase
     public function loadSource($string)
     {
         $this->sourceHtml = $string;
-        $this->parseTemplate();
+        return $this->parseTemplate();
     }
 
     /**
@@ -219,7 +274,7 @@ class HtmlPrase
         // 结束标识 {/标识：
         $tagEndAll = $this->tagStart . '/' . $this->nameSpace.':';
 
-        // 结束标识 {/
+        // 结束标识 /}
         $tagEnd = '/' . $this->tagEnd;
 
         $sourceLen = strlen($this->sourceHtml);
@@ -232,6 +287,8 @@ class HtmlPrase
         // 标签处理截断标识
         $clipChar = ["/", "\r", "\t", "\n", " ", $this->tagEnd];
 
+        // 加载配置信息
+        $tags = $this->app->make('config')->get('cms.tags', []);
 
         // 执行解析
         for ($i = 0; $i < $sourceLen; $i++){
@@ -285,7 +342,7 @@ class HtmlPrase
                 $len = $posEnd + strlen($tagFull);
             }
             if (! $len){
-                throw new HtmlPraseException('标签 "'.$tmpTagName.'" 在位置'.$posCur . '错误！');
+                throw new HtmlPraseException('标签 "'.$tmpTagName.'"错误（'.$this->position($posCur) . '）！');
             }
 
             $i = $len;
@@ -307,6 +364,14 @@ class HtmlPrase
 //            dump($tagObject, $innerText);
 
             if ($tagObject->tagName){
+                // 检测标签是否支持
+                if ($this->isCheck && !in_array($tagObject->tagName, $this->inTags) && !array_key_exists($tagObject->tagName, $tags)){
+                    throw new HtmlPraseException('标签 "'.$tagObject->tagName.'"暂不支持 ('.$this->position($posCur) . ')！');
+                }
+
+                // include 文件检测
+
+
                 $this->tagNum++;
                 $tagObject->posStart = $posCur;
                 $tagObject->posEnd = $i;
@@ -314,7 +379,26 @@ class HtmlPrase
                 $this->tags[] = $tagObject;
             }
         }
+
+        return $this;
     }
+
+    /**
+     * 位置转换
+     */
+    private function position(int $pos)
+    {
+        // 行数
+        $lineNum = substr_count($this->sourceHtml, "\n", 0, $pos) + 1;
+
+        // 当前行行几列
+        $colNum = $pos - strrpos($this->sourceHtml, "\n", $pos - strlen($this->sourceHtml));
+
+        return $lineNum.'行'.$colNum.'列';
+    }
+
+
+    /***********数据渲染***************/
 
     /**
      * 渲染生成页面
@@ -324,18 +408,57 @@ class HtmlPrase
         // 未解析到属性
         if (! $this->tagNum) return $this->sourceHtml;
 
-        // 基础数据处理
-        // field include ...
-
+        // 加载配置信息
+        $tags = $this->app->make('config')->get('cms.tags', []);
 
         // 对tag进行渲染
         $html = '';
         $nextPos = 0;
+        $isPage = 0;
         foreach ($this->tags as $tag){
+            if (($tags[$tag->tagName]['type']??'') == 'list'){
+                dump($tag);
+            }
+
+            // 内置标签处理
+            if (in_array($tag->tagName, $this->inTags)){
+                $this->{'tag'.ucwords($tag->tagName)}($tag);
+            }
+
+            // 检测是否已替换内容 并且 不为属性标签
+            if (! $tag->isReplace && $this->nameSpace != 'field'){
+                $tagConfig = $tags[$tag->tagName];
+
+                // 数据获取类
+                $tagObject = $this->app->make($tagConfig['taget']);
+                $data = $tagObject->data($tag, $this->getLinkData());
+
+                // 解析数据
+                if ($tagConfig['type'] == 'list'){
+                    $tpl = clone $this;
+                    $tpl->clear()->setNameSpace('field', '[', ']', false)->loadSource($tag->innerText);
+
+                    // 数据遍历，渲染数据
+                    $data = array_map(function ($item)use($tpl){
+                        foreach ($tpl->getTags() as $tmpTag){
+                            $tmpTag->assign($item[$tmpTag->tagName] ?? '');
+                        }
+                        return $tpl->fetch();
+                    }, $data);
+                    $data = implode($data, "");
+                    unset($tpl);
+                }
+
+                // 获取数据
+                $tag->assign($data);
+            }
+
             $html .= substr($this->sourceHtml, $nextPos, $tag->posStart-$nextPos);
             $html .= $tag->tagVal;
             $nextPos = $tag->posEnd;
         }
+
+//        dd($html, 1111);
 
         $sourceLen = strlen($this->sourceHtml);
         if ($sourceLen > $nextPos){
@@ -344,4 +467,41 @@ class HtmlPrase
 
         return $html;
     }
+
+    /**
+     * 保存内容到指定文件
+     * @param string $file
+     */
+    public function saveTo($file)
+    {
+        $html = $this->fetch();
+        return Storage::disk('local')->put($file, $html);
+    }
+
+    /**
+     * include 标签处理
+     * @return
+     */
+    public function tagInclude($tag)
+    {
+        // 获取要引入的文件
+        if(! $fileName = $tag->getAttribute('filename')){
+            throw new HtmlPraseException('标签 "'.$tag->tagName.'"参数filename不存在 ('.$this->position($tag->posStart) . ')！');
+        }
+
+        $fullPath = $this->homeDir .'/'. $fileName;
+        if (!is_file($fullPath)) {
+            $tag->assign('标签：include包含的文件（'.$fileName.'）不存在');
+            return $this;
+        }
+
+        // 替换为html
+        $tpl = clone $this;
+        $tag->assign($tpl->clear()->loadTemplate($fileName)->fetch());
+//        $tag->assign("<p>龙鱼_http://qmt.jiaoyu.cn");
+        unset($tpl);
+
+        return $this;
+    }
+
 }
