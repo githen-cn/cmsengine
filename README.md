@@ -44,15 +44,16 @@ return [
 
 目前标签解析支持三种方式：
 1. 获取属性值
- > {eol:tag.title/}
- >
- > {eol:tag name="title}
+> {eol:tag.title/}
+> 
+> {eol:tag name="title}
+
 2. 对列表进行渲染
- > {eol:tag id=1 order='desc'}
- > 
- >  <li>[field:title]</li>
- > 
- >  {/eol:tag}
+> {eol:arclist id=1 row=60 order='desc'}
+> 
+>  &lt;li&gt;[field:title]&lt;/li&gt;
+> 
+>  {/eol:tag}
 
 ## 使用举例
 
@@ -95,6 +96,7 @@ $tpl->saveTo('index.html');
 ```
 
 ### 取数据值实例
+在`config/cms.php`中的`tags`中，声明的标签`type`为`field`时，会自动调用此类，标签名为类中的方法名。
 ```php
 class Fields
 {
@@ -139,6 +141,7 @@ class Fields
 ```
 
 ### 获取列表实例
+在`config/cms.php`中的`tags`中，声明的标签`type`为`list`时，会自动调用此类，标签名为类中的方法名。
 ```php
 
 class Lists
@@ -165,6 +168,7 @@ class Lists
 
     /**
      * 获取列表数据
+     *  
      */
     private function arclist($tag, $linkData)
     {
