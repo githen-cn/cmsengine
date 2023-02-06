@@ -107,16 +107,20 @@ class HtmlPrase
     private $tplid = '';
 
     /**
+     * 文件生成结果
+     * @var array
+     */
+    public $saveToResult = [];
+    /**
      * 分页数据
      * @val array
      */
     private $pageInfo = [
         'page_total' => 0,  // 总条数
         'page_size' => 0, // 每页系数
-        'page_num' => 0,  // 总页数
-        'page_index' => 0,  // 当前第几页
+        'page_num' => 1,  // 总页数
+        'page_index' => 1,  // 当前第几页
         'page_url' => '',  // 分页规则
-
     ];
 
     /**
@@ -233,9 +237,14 @@ class HtmlPrase
      * 设置连接数据
      *
      */
-    public function setLinkData($data)
+    public function setLinkData($data, $recover = true)
     {
-        $this->linkData = $data;
+        if ($recover){
+            $this->linkData = $data;
+        }else{
+            $this->linkData = array_merge($this->linkData, $data);
+        }
+
         return $this;
     }
 
@@ -258,6 +267,14 @@ class HtmlPrase
         $this->sourceHtml = '';
         $this->tags = [];
         $this->tagNum = 0;
+
+        $this->pageInfo = [
+            'page_total' => 0,  // 总条数
+            'page_size' => 0, // 每页系数
+            'page_num' => 1,  // 总页数
+            'page_index' => 1,  // 当前第几页
+            'page_url' => '',  // 分页规则
+        ];
 
         return $this;
     }
@@ -300,7 +317,7 @@ class HtmlPrase
         $path = $this->homeDir . '/' . $filename;
         if (!file_exists($path)){
             $this->sourceHtml = $filename.' 文件不存在';
-            return;
+            return $this;
         }
 
         return $this->loadSource(file_get_contents($path));
@@ -462,13 +479,16 @@ class HtmlPrase
      * 渲染生成页面
      * @param $page 当前页数
      */
-    public function fetch()
+    public function fetch(int $pageIndex = 1)
     {
         // 未解析到属性
         if (! $this->tagNum) return $this->sourceHtml;
 
         // 加载配置信息
         $tags = $this->app->make('config')->get('cms.tags', []);
+
+        // 更新当前分页的数据
+        $this->pageInfo['page_index'] = $pageIndex;
 
         // 对tag进行渲染
         $html = '';
@@ -481,9 +501,15 @@ class HtmlPrase
                 $this->{'tag'.ucwords($tag->tagName)}($tag);
             }
 
-            // 检测是否已替换内容 并且 不为属性标签
+            // 检测是否(已替换内容 并且 不为属性标签) 或者 为分页标签
             if (! $tag->isReplace && $this->nameSpace != 'field'){
+
                 $tagConfig = $tags[$tag->tagName];
+
+                // 设置执行第几页
+                if ($tagConfig['type'] == 'page') {
+                    $this->setLinkData(['page_index' => $this->pageInfo['page_index']], false);
+                }
 
                 // 数据获取类
                 $tagObject = $this->app->make($tagConfig['target']);
@@ -493,6 +519,7 @@ class HtmlPrase
                 if ($tagConfig['type'] == 'page'){
                     $this->pageInfo['page_total'] = $data['total'];
                     $this->pageInfo['page_size'] = $data['size'];
+                    $this->pageInfo['page_num'] = (int) ceil($data['total']/$data['size']);
                 }
 
                 // 解析列表数据
@@ -513,14 +540,17 @@ class HtmlPrase
 
                 // 获取数据
                 $tag->assign($data);
+
+                if ($tagConfig['type'] == 'page'){
+                    $tag->isReplace = false;
+                }
+
             }
 
             $html .= substr($this->sourceHtml, $nextPos, $tag->posStart-$nextPos);
             $html .= $tag->tagVal;
             $nextPos = $tag->posEnd;
         }
-
-//        dd($html, 1111);
 
         $sourceLen = strlen($this->sourceHtml);
         if ($sourceLen > $nextPos){
@@ -536,8 +566,18 @@ class HtmlPrase
      */
     public function saveTo($file)
     {
-        $html = $this->fetch();
-        return Storage::disk('local')->put($file, $html);
+        $this->pageInfo['page_url'] = $file;
+
+        do{
+            $html = $this->fetch($this->pageInfo['page_index']);
+            $tmpFile = str_replace('{page}', $this->pageInfo['page_index'], $file);
+            $this->saveToResult[$tmpFile] = Storage::disk('local')->put($tmpFile, $html);
+        }while(++$this->pageInfo['page_index'] <= $this->pageInfo['page_num']);
+
+        $this->clear();
+
+        return (bool) array_search(false, $this->saveToResult);
+
     }
 
     /**
