@@ -486,7 +486,7 @@ class HtmlPrase
                 $tagConfig = $tags[$tag->tagName];
 
                 // 数据获取类
-                $tagObject = $this->app->make($tagConfig['taget']);
+                $tagObject = $this->app->make($tagConfig['target']);
                 $data = $tagObject->data($tag, $this->getLinkData());
 
                 // 分页数据，处理分页数据

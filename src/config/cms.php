@@ -17,11 +17,9 @@ return [
     ],
 
     'tags' => [
-        'field' => [
-//            'site' => classname
-        ],
-        'list' => [],
-        'page' => [],
+//        'site' => ['type' => 'field', 'target' => 'cms.field'],
+//        'arclist' => ['type' => 'list', 'target' => 'cms.list'],
+//        'list' => ['type' => 'page', 'target' => 'cms.page'],
     ],
 
 ];
