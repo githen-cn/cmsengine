@@ -96,9 +96,36 @@ class HtmlPrase
     private $linkData = [];
 
     /**
+     * 静态资源域名
+     * @val string
+     */
+    private $domain = '';
+    /**
+     * 模板id
+     * @val string
+     */
+    private $tplid = '';
+
+    /**
+     * 分页数据
+     * @val array
+     */
+    private $pageInfo = [
+        'page_total' => 0,  // 总条数
+        'page_size' => 0, // 每页系数
+        'page_num' => 0,  // 总页数
+        'page_index' => 0,  // 当前第几页
+        'page_url' => '',  // 分页规则
+
+    ];
+
+    /**
      * 内置标签
      */
-    private $inTags = ['include'];
+    private $inTags = [
+        'include',  // 文件包含
+        'global' // 全局属性标签
+    ];
 
     /**
      * 构建引擎所需要的配置信息
@@ -133,11 +160,41 @@ class HtmlPrase
         );
 
         // 设置模板目录
-        $this->setHomedir($options['home']);
+        if (isset($options['home'])){
+            $this->setHomedir($options['home']);
+        }
 
         $this->tagMaxLen = $options['tagmaxlen'] ?? 60;
         $this->toLow     = $options['tolow']     ?? TRUE;
 
+        return $this;
+    }
+
+    /**
+     * 设置静态资源域名
+     */
+    public function setDomain($domain)
+    {
+        $this->domain = $domain;
+        return $this;
+    }
+
+    /**
+     * 设置分页规则
+     *
+     */
+    public function setPageRule($rule)
+    {
+        $this->pageInfo['page_url'] = $rule;
+        return $this;
+    }
+
+    /**
+     * 设置模板id
+     */
+    public function setTplid($tplid)
+    {
+        $this->tplid = $tplid;
         return $this;
     }
 
@@ -361,7 +418,6 @@ class HtmlPrase
 
             $tagObject = new Tag();
             $tagObject->setSource($attribute);
-//            dump($tagObject, $innerText);
 
             if ($tagObject->tagName){
                 // 检测标签是否支持
@@ -369,8 +425,10 @@ class HtmlPrase
                     throw new HtmlPraseException('标签 "'.$tagObject->tagName.'"暂不支持 ('.$this->position($posCur) . ')！');
                 }
 
-                // include 文件检测
-
+                // 检测标签没有属性的情况
+                if ($this->nameSpace != 'field' && count($tagObject->getAttributes()) == 0){
+                    throw new HtmlPraseException('标签 "'.$tagObject->tagName.'"未填写属性值 ('.$this->position($posCur) . ')！');
+                }
 
                 $this->tagNum++;
                 $tagObject->posStart = $posCur;
@@ -402,6 +460,7 @@ class HtmlPrase
 
     /**
      * 渲染生成页面
+     * @param $page 当前页数
      */
     public function fetch()
     {
@@ -416,9 +475,6 @@ class HtmlPrase
         $nextPos = 0;
         $isPage = 0;
         foreach ($this->tags as $tag){
-            if (($tags[$tag->tagName]['type']??'') == 'list'){
-                dump($tag);
-            }
 
             // 内置标签处理
             if (in_array($tag->tagName, $this->inTags)){
@@ -433,8 +489,14 @@ class HtmlPrase
                 $tagObject = $this->app->make($tagConfig['taget']);
                 $data = $tagObject->data($tag, $this->getLinkData());
 
-                // 解析数据
-                if ($tagConfig['type'] == 'list'){
+                // 分页数据，处理分页数据
+                if ($tagConfig['type'] == 'page'){
+                    $this->pageInfo['page_total'] = $data['total'];
+                    $this->pageInfo['page_size'] = $data['size'];
+                }
+
+                // 解析列表数据
+                if ($tagConfig['type'] == 'list' || $tagConfig['type'] == 'page'){
                     $tpl = clone $this;
                     $tpl->clear()->setNameSpace('field', '[', ']', false)->loadSource($tag->innerText);
 
@@ -444,7 +506,7 @@ class HtmlPrase
                             $tmpTag->assign($item[$tmpTag->tagName] ?? '');
                         }
                         return $tpl->fetch();
-                    }, $data);
+                    }, $tagConfig['type'] == 'page' ? $data['items']:$data);
                     $data = implode($data, "");
                     unset($tpl);
                 }
@@ -501,6 +563,43 @@ class HtmlPrase
 //        $tag->assign("<p>龙鱼_http://qmt.jiaoyu.cn");
         unset($tpl);
 
+        return $this;
+    }
+
+
+    /**
+     * global 标签处理
+     * @return
+     */
+    public function tagGlobal($tag)
+    {
+        $val = '';
+        switch ($tag->getAttribute('name')){
+            case 'domain':
+            case 'tplid':
+                $val = $this->{$tag->getAttribute('name')};
+                break;
+
+            case 'resource_url':
+                $val  = rtrim($this->domain, '/') . '/' . $this->tplid . '/';
+                break;
+
+            case 'page_total':
+            case 'page_size':
+            case 'page_num':
+            case 'page_index':
+            case 'page_url':
+                $val = $this->pageInfo[$tag->getAttribute('name')];
+
+                break;
+            default:
+                throw new HtmlPraseException('标签 "'.$tag->tagName.'"属性值"'.$tag->getAttribute('name').'"不存在 ('.$this->position($tag->posStart) . ')！');
+        }
+
+        $tag->assign($val);
+
+
+//        dd($tag, $tag->getAttribute('name'));
         return $this;
     }
 

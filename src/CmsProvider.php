@@ -28,7 +28,7 @@ class CmsProvider extends ServiceProvider
     public function boot()
     {
         // 注册模板解析服务
-        $this->app->singleton('html.tpl', function (){
+        $this->app->singleton('html.tpl', function ($app, $d){
             return new HtmlPrase($this->app);
         });
     }
