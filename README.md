@@ -91,6 +91,10 @@ $tpl->saveTo('index.html');
         $this->app->singleton('cms.list', function ($app) {
             return new Lists();
         });
+        
+        $this->app->singleton('cms.page', function ($app) {
+            return new Pages();
+        });
     }
 
 ```
@@ -188,4 +192,78 @@ class Lists
         return $arclist->toArray();
     }
 }
+```
+
+### 获取分页实例
+在`config/cms.php`中的`tags`中，声明的标签`type`为`page`时，会自动调用此类，标签名为类中的方法名。
+```php
+<?php
+
+namespace App\Extend\Cmss;
+
+use App\Models\School;
+use App\Models\Site;
+
+class Pages
+{
+    /**
+     * 缓存数据
+     * [
+     *      $site_id => [
+     *          'site' => Model
+     *      ]
+     * ]
+     */
+    private $cache;
+
+    /**
+     * @param $tag
+     * @param $linkData
+     */
+    public function data($tag, $linkData)
+    {
+        // 获取标签指定数据
+        return $this->{$tag->tagName}($tag, $linkData);
+    }
+
+    /**
+     * 获取列表数据
+     */
+    private function list($tag, $linkData)
+    {
+        // 必要参数检测
+
+        // code ...
+        // 栏目ID是否填写，学校id，站点id是否有权限等
+
+        // 需要生成分页的第几页
+        $page = $linkData['page_index'];
+//        dd($page);
+
+        // 获取站点缓存类
+        $unikey = "{$tag->getAttribute('size')}_{$tag->getAttribute('per')}_{$page}";
+        $cacheKey = $linkData['site_id'].'.list.'.$unikey;
+        if(! $data = data_get($this->cache, $cacheKey, false)){
+            // 获取总条数
+            $count = Site\News::where('category_id', $linkData['category_id'])->count();
+            $arclist = Site\News::select('type','title', 'cover', 'content', 'created_at', 'description')
+                ->where('category_id', $linkData['category_id'])
+                ->skip(($page-1) * $tag->getAttribute('per'))
+                ->take($tag->getAttribute('per'))->get();
+
+            $data = [
+                'total' => (int)$count,  // 总条数
+                'size' => (int)$tag->getAttribute('per'), // 每页
+                'items' => $arclist->toArray()
+            ];
+
+            data_set($this->cache, $cacheKey, $arclist);
+            dump("查询了下栏目id为".$linkData['category_id'].'下面的文章分页，page：'.$page);
+        }
+
+        return $data;
+
+    }
+}
+
 ```
