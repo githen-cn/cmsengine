@@ -48,12 +48,13 @@ return [
 > 
 > {eol:tag name="title}
 
-2. 对列表进行渲染
+2. 对列表/分页进行渲染
 > {eol:arclist id=1 row=60 order='desc'}
 > 
 >  &lt;li&gt;[field:title]&lt;/li&gt;
 > 
 >  {/eol:tag}
+> 
 
 3. 内置标签
 * include
@@ -289,7 +290,6 @@ class Pages
 
         // 需要生成分页的第几页
         $page = $linkData['page_index'];
-//        dd($page);
 
         // 获取站点缓存类
         $unikey = "{$tag->getAttribute('size')}_{$tag->getAttribute('per')}_{$page}";
