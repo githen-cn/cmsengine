@@ -55,6 +55,49 @@ return [
 > 
 >  {/eol:tag}
 
+3. 内置标签
+* include
+
+> 标签举例
+> 
+> {eol:include filename='footer.html'}
+> 
+> 引擎将会把 app('html.tpl')中 $homeDir/footer.html进行渲染生成html替换此标签
+> 
+
+
+* global
+> 全局定义的属性
+> 
+> {eol:global.page_total/}  // 总条数
+> 
+> {eol:global.page_size/}   // 每页数据
+> 
+> {eol:global.page_num/}    // 总页数
+> 
+> {eol:global.page_index/}  // 当前页数
+> 
+> {eol:global.page_url/}  // 分页规则
+>
+> {eol:global.domain}  // 静态资源域名
+> 
+> {eol:global.tplid}   //  模板id
+> 
+> {eol:global.resource_url}  // 静态资源调用地址
+> 
+> 注：此地址是将domain和tplid进行组装，若tplid未设置或为0，则不拼接
+> 
+> $domain = 'https://www.test.com';
+> 
+> $tplid = 0
+> 
+> 则$resource_url 为 'https://www.test.com/'  
+> 
+>若$tplid = 10 或 $tplid = 'addd'
+> 
+> 则$resource_url 为 'https://www.test.com/10/' 或 'https://www.test.com/addd/'
+
+
 ## 使用举例
 
 ### 项目中调用
@@ -69,6 +112,13 @@ $html = $tpl->fetch();
 // 渲染后的html直接保存到文件()
 // 需要在config/filesystems.php中声明 local 的驱动
 $tpl->saveTo('index.html');
+
+//分页调用,直接返回需要页面的html代码
+$html = $tpl->fetch(2);
+
+// 遍历生成文件, {page}将会生成对应的页码数，如果存在第二个参数，则首页将被重命名为此参数
+$tpl->saveTo('aa/list{page}.html', 'new.html');
+
 ```
 
 ### 注册自定义数据服务提供者
@@ -196,6 +246,7 @@ class Lists
 
 ### 获取分页实例
 在`config/cms.php`中的`tags`中，声明的标签`type`为`page`时，会自动调用此类，标签名为类中的方法名。
+分页中若展示页码，可通过`global`获取分页信息，通过`js`渲染
 ```php
 <?php
 
@@ -245,8 +296,8 @@ class Pages
         $cacheKey = $linkData['site_id'].'.list.'.$unikey;
         if(! $data = data_get($this->cache, $cacheKey, false)){
             // 获取总条数
-            $count = Site\News::where('category_id', $linkData['category_id'])->count();
-            $arclist = Site\News::select('type','title', 'cover', 'content', 'created_at', 'description')
+            $count = News::where('category_id', $linkData['category_id'])->count();
+            $arclist = News::select('type','title', 'cover', 'content', 'created_at', 'description')
                 ->where('category_id', $linkData['category_id'])
                 ->skip(($page-1) * $tag->getAttribute('per'))
                 ->take($tag->getAttribute('per'))->get();
@@ -254,7 +305,7 @@ class Pages
             $data = [
                 'total' => (int)$count,  // 总条数
                 'size' => (int)$tag->getAttribute('per'), // 每页
-                'items' => $arclist->toArray()
+                'items' => $arclist->toArray() // 当前页列表数据
             ];
 
             data_set($this->cache, $cacheKey, $arclist);

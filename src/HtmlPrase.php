@@ -563,14 +563,23 @@ class HtmlPrase
     /**
      * 保存内容到指定文件
      * @param string $file
+     * @param string  $isRecoverHome 重写分页首页的文件名
      */
-    public function saveTo($file)
+    public function saveTo($file, $recoverHomeFile = '')
     {
         $this->pageInfo['page_url'] = $file;
 
         do{
             $html = $this->fetch($this->pageInfo['page_index']);
+
             $tmpFile = str_replace('{page}', $this->pageInfo['page_index'], $file);
+
+            // 检测是否存在{page}标识，如果存在则首页全名为$recoverHomeFile
+            if ($this->pageInfo['page_index'] == 1 && strpos($file, '{page}') !== false && $recoverHomeFile){
+                $tmpFile = pathinfo($tmpFile);
+                $tmpFile = $tmpFile['dirname'] . '/'.$recoverHomeFile;
+            }
+
             $this->saveToResult[$tmpFile] = Storage::disk('local')->put($tmpFile, $html);
         }while(++$this->pageInfo['page_index'] <= $this->pageInfo['page_num']);
 
@@ -621,7 +630,10 @@ class HtmlPrase
                 break;
 
             case 'resource_url':
-                $val  = rtrim($this->domain, '/') . '/' . $this->tplid . '/';
+                $val  = rtrim($this->domain, '/') . '/';
+                if ($this->tplid){
+                    $val .= $this->tplid . '/';
+                }
                 break;
 
             case 'page_total':
