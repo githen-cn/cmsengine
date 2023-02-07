@@ -29,5 +29,6 @@ Temporary Items
 # 本地记录文件
 my.txt
 
+composer.lock
 /vendor/
 .idea
