@@ -4,6 +4,8 @@
 这是一个基于laravel框架，为CMS模板引擎生成HTML实现的扩展包。
 支持对属性值，列表自定义标签。
 
+<a href='https://gitee.com/githen/cmsengine/stargazers'><img src='https://gitee.com/githen/cmsengine/badge/star.svg?theme=dark' alt='star'></img></a>
+<a href='https://gitee.com/githen/cmsengine/members'><img src='https://gitee.com/githen/cmsengine/badge/fork.svg?theme=dark' alt='fork'></img></a>
 
 ## 安装
 
