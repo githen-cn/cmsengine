@@ -37,7 +37,7 @@ return [
         'site' => ['type' => 'field', 'taget' => 'cms.field'],  
         'school' => ['type' => 'field', 'taget' => 'cms.field'],
         'arclist' => ['type' => 'list', 'taget' => 'cms.list'],
-        'page' => ['type' => 'page', 'taget' => 'cms.field'],
+        'page' => ['type' => 'page', 'taget' => 'cms.page'],
     ],
 
 ];
@@ -49,7 +49,7 @@ return [
 1. 获取属性值
 > {eol:tag.title/}
 > 
-> {eol:tag name="title}
+> {eol:tag name="title"/}
 
 2. 对列表/分页进行渲染
 > {eol:arclist id=1 row=60 order='desc'}
@@ -64,7 +64,7 @@ return [
 
 > 标签举例
 > 
-> {eol:include filename='footer.html'}
+> {eol:include filename='footer.html'/}
 > 
 > 引擎将会把 app('html.tpl')中 $homeDir/footer.html进行渲染生成html替换此标签
 > 
@@ -83,11 +83,11 @@ return [
 > 
 > {eol:global.page_url/}  // 分页规则
 >
-> {eol:global.domain}  // 静态资源域名
+> {eol:global.domain/}  // 静态资源域名
 > 
-> {eol:global.tplid}   //  模板id
+> {eol:global.tplid/}   //  模板id
 > 
-> {eol:global.resource_url}  // 静态资源调用地址
+> {eol:global.resource_url/}  // 静态资源调用地址
 > 
 > 注：此地址是将domain和tplid进行组装，若tplid未设置或为0，则不拼接
 > 
