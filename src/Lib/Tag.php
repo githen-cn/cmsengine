@@ -1,6 +1,6 @@
 <?php
 
-namespace Githen\CmsEngine;
+namespace Githen\CmsEngine\Lib;
 
 use Githen\CmsEngine\Exceptions\HtmlPraseException;
 
@@ -14,6 +14,7 @@ class Tag
      * @var bool
      */
     public $isReplace = FALSE;
+    private $excludeReplace = ['page', 'foreach'];
 
     /**
      * 标签名称
@@ -156,12 +157,12 @@ class Tag
      * @param string $str 要渲染的值
      * @param array $black 敏感词
      */
-    public function assign($str, $black = [])
+    public function assign($str, $black = [], $isReplace = true)
     {
         // 敏感词处理
         $str = str_replace($black, '***', $str);
+        $this->isReplace = $isReplace;
 
-        $this->isReplace = true;
         $this->tagVal = $str;
     }
 

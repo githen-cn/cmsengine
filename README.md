@@ -27,6 +27,7 @@ return [
         'tagmaxlen' => 60,     // 标签名最长长度
         'tolow' => TRUE,       // 标签大小写不敏感
         'home' => storage_path('template'), // 模板根目录
+        'disk' => 'local',     // 存储引擎
     ],
 
     // 标签白名单，只有在此定义才可解析通过

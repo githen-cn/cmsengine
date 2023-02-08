@@ -14,6 +14,7 @@ return [
         'tagmaxlen' => 60,
         'tolow' => TRUE,
         'home' => storage_path('template'),
+        'disk' => 'local'
     ],
 
     'tags' => [
