@@ -71,6 +71,26 @@ return [
 > 引擎将会把 app('html.tpl')中 $homeDir/footer.html进行渲染生成html替换此标签
 > 
 
+* foreach
+
+> 数据遍历
+> 
+> {eol:foreach array="field:category"}
+> 
+> [field:key] -- [field:val]
+> 
+> {/eol:foreach}
+> 
+> array: 需要遍历的数组
+> 
+> 1. 支持数组索引的方式调用 [field:index]
+> 
+> 2. 使用内置标签,前提是数组中不存在 key/val 两个索引 
+>
+ >> [field:key]：获取数组索引
+ >> 
+ >> [field:val]：获取数组值（字符串，整形）
+> 
 
 * global
 > 全局定义的属性
