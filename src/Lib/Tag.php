@@ -2,7 +2,7 @@
 
 namespace Githen\CmsEngine\Lib;
 
-use Githen\CmsEngine\Exceptions\HtmlPraseException;
+use Githen\CmsEngine\Exceptions\HtmlParseException;
 
 /**
  * 模板标签解析类
@@ -14,7 +14,6 @@ class Tag
      * @var bool
      */
     public $isReplace = FALSE;
-    private $excludeReplace = ['page', 'foreach'];
 
     /**
      * 标签名称
@@ -69,6 +68,7 @@ class Tag
      * 设置需要解析的内容并进行解析
      *
      * $param string $str
+     * @throws HtmlParseException
      */
     public function setSource($str)
     {
@@ -76,7 +76,7 @@ class Tag
         $str = str_replace([" ", "\r", "\n", "\t"], " ", $str);
         $str = str_replace(['\]'], "]", trim($str));
         if (strlen($str) > $this->sourceMax){
-            throw new HtmlPraseException('模板解析超过限长('.$this->sourceMax.')，当前长度:'.strlen($str),[$str]);
+            throw new HtmlParseException('模板解析超过限长('.$this->sourceMax.')，当前长度:'.strlen($str),[$str]);
         }
 
         // 获取标签名称
@@ -96,7 +96,7 @@ class Tag
 
         $tmpStr = trim(strstr($str, ' '));
         $flag = -1;
-        $field = $val = '';
+        $field = $val = $border = '';
         for ($i=0; $i<strlen($tmpStr); $i++){
             switch ($flag){
                 case -1:
@@ -133,6 +133,7 @@ class Tag
             }
         }
         if ($field){
+            $field = trim($field);
             $this->attribute[$field] = trim($val);
         }
     }
@@ -154,10 +155,12 @@ class Tag
 
     /**
      * 设置解析的值
+     *
      * @param string $str 要渲染的值
      * @param array $black 敏感词
+     * @param bool $isReplace 是否标记替换
      */
-    public function assign($str, $black = [], $isReplace = true)
+    public function assign(string $str, array $black = [], bool $isReplace = true)
     {
         // 敏感词处理
         $str = str_replace($black, '***', $str);

@@ -6,7 +6,7 @@ namespace Githen\CmsEngine\Exceptions;
  * 模板解析异常
  *
  */
-class HtmlPraseException extends \Exception
+class HtmlParseException extends \Exception
 {
     /**
      * 错误信息.
@@ -18,9 +18,7 @@ class HtmlPraseException extends \Exception
     public function __construct($message = "", $errors = [])
     {
         $this->errors = $errors;
-
         parent::__construct($message);
-
     }
 
 }

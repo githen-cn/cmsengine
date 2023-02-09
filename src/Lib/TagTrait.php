@@ -2,7 +2,8 @@
 
 namespace Githen\CmsEngine\Lib;
 
-use Githen\CmsEngine\Exceptions\HtmlPraseException;
+use Githen\CmsEngine\Exceptions\HtmlParseException;
+use Githen\CmsEngine\HtmlParse;
 
 trait TagTrait {
     /**
@@ -30,7 +31,7 @@ trait TagTrait {
     /**
      * 设置静态资源域名
      */
-    public function setDomain($domain)
+    public function setDomain($domain): HtmlParse
     {
         $this->domain = $domain;
         return $this;
@@ -39,7 +40,7 @@ trait TagTrait {
     /**
      * 设置模板id
      */
-    public function setTplid($tplid)
+    public function setTplid($tplid): HtmlParse
     {
         $this->tplid = $tplid;
         return $this;
@@ -47,13 +48,15 @@ trait TagTrait {
 
     /**
      * include 标签处理
-     * @return
+     * @param $tag
+     * @return HtmlParse
+     * @throws HtmlParseException
      */
-    public function tagInclude($tag)
+    public function tagInclude($tag): HtmlParse
     {
         // 获取要引入的文件
         if(! $fileName = $tag->getAttribute('filename')){
-            throw new HtmlPraseException('标签 "'.$tag->tagName.'"参数filename不存在 ('.$this->position($tag->posStart) . ')！');
+            throw new HtmlParseException('标签 "'.$tag->tagName.'"参数filename不存在 ('.$this->position($tag->posStart) . ')！');
         }
 
         $fullPath = $this->homeDir .'/'. $fileName;
@@ -65,20 +68,19 @@ trait TagTrait {
         // 替换为html
         $tpl = clone $this;
         $tag->assign($tpl->clear()->loadTemplate($fileName)->fetch());
-//        $tag->assign("<p>龙鱼_http://qmt.jiaoyu.cn");
         unset($tpl);
 
         return $this;
     }
 
-
     /**
      * global 标签处理
-     * @return
+     * @param $tag
+     * @return HtmlParse
+     * @throws HtmlParseException
      */
-    public function tagGlobal($tag)
+    public function tagGlobal($tag): HtmlParse
     {
-        $val = '';
         switch ($tag->getAttribute('name')){
             case 'domain':
             case 'tplid':
@@ -101,27 +103,27 @@ trait TagTrait {
 
                 break;
             default:
-                throw new HtmlPraseException('标签 "'.$tag->tagName.'"属性值"'.$tag->getAttribute('name').'"不存在 ('.$this->position($tag->posStart) . ')！');
+                throw new HtmlParseException('标签 "'.$tag->tagName.'"属性值"'.$tag->getAttribute('name').'"不存在 ('.$this->position($tag->posStart) . ')！');
         }
 
         $tag->assign($val);
 
-
-//        dd($tag, $tag->getAttribute('name'));
         return $this;
     }
 
     /**
      * foreach 标签
-     * @param array $data  遍历的数组
+     * @param Tag $tag
+     * @param array $data 遍历的数组
+     * @return string
+     * @throws HtmlParseException
      */
-    public function tagForeach($tag, $data = [])
+    public function tagForeach(Tag $tag, array $data = []): string
     {
         $tpl = clone $this;
         $tpl->clear()->setNameSpace('field', '[', ']', false)->loadSource($tag->innerText);
 
         $html = '';
-
         foreach ($data as $key => $val){
             foreach ($tpl->getTags() as $tmpTag){
                 // 数组中有此索引值，优先使用，无则对 key,val进行赋值
@@ -131,10 +133,6 @@ trait TagTrait {
             $html .= $tpl->fetch();
         }
 
-
         return $html;
-
     }
-
-
 }

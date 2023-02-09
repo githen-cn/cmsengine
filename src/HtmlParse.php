@@ -2,17 +2,16 @@
 
 namespace Githen\CmsEngine;
 
-use Githen\CmsEngine\Exceptions\HtmlPraseException;
+use Githen\CmsEngine\Exceptions\HtmlParseException;
 use Githen\CmsEngine\Lib\TagTrait;
 use Githen\CmsEngine\Lib\Tag;
 use Illuminate\Support\Facades\Storage;
-use function GuzzleHttp\Psr7\str;
 
 /**
  * HTML模板解析引擎
  *
  */
-class HtmlPrase
+class HtmlParse
 {
     use TagTrait;
 
@@ -34,10 +33,9 @@ class HtmlPrase
 
     /**
      * 模板文件目录
-     * @var stirng
+     * @var string
      */
     private $homeDir = '';
-
 
     /**
      * 标记名称
@@ -117,7 +115,7 @@ class HtmlPrase
 
     /**
      * 静态文件存储引擎
-     * @var stirng
+     * @var string
      */
     private $disk = 'local';
 
@@ -157,22 +155,20 @@ class HtmlPrase
     }
 
     /**
-     *
+     * 当复制类时，生成的html不清除空白行
      */
     public function __clone()
     {
         $this->clearEnter = false;
     }
 
-
     /**
      * 修改默认配置
      *
      * @param array
-     *
-     * @return void
-    */
-    public function setConfigs($options = [])
+     * @return HtmlParse
+     */
+    public function setConfigs($options = []): HtmlParse
     {
         // 设置标记名称
         $this->setNameSpace(
@@ -200,7 +196,7 @@ class HtmlPrase
      * 设置分页规则
      *
      */
-    public function setPageRule($rule)
+    public function setPageRule($rule): HtmlParse
     {
         $this->pageInfo['page_url'] = $rule;
         return $this;
@@ -212,36 +208,39 @@ class HtmlPrase
      * @param string $name  标记名称
      * @param string $start 标记开始字符
      * @param string $end   标记结束字符
-     * @param bool   $isCheck 标签检测
+     * @param bool $isCheck 标签检测
      *
      * @return void
      */
-    public function setNameSpace($name, $strat = '{', $end = '}', $isCheck= true)
+    public function setNameSpace(string $name, string $start = '{', string $end = '}', bool $isCheck= true): HtmlParse
     {
         $this->nameSpace = $name;
-        $this->tagStart  = $strat;
+        $this->tagStart  = $start;
         $this->tagEnd    = $end;
         $this->isCheck   = $isCheck;
 
         return $this;
-
     }
 
     /**
      * 设置模板目录
      *
+     * @param $dir string 模板根目录
+     * @return HtmlParse
      */
-    public function setHomedir($dir)
+    public function setHomedir(string $dir): HtmlParse
     {
         $this->homeDir = $dir;
         return $this;
     }
 
     /**
-     * 设置连接数据
-     *
+     * 设置项目中使用的中转数据
+     * @param array $data
+     * @param bool $recover
+     * @return $this
      */
-    public function setLinkData($data, $recover = true)
+    public function setLinkData(array $data, bool $recover = true):HtmlParse
     {
         if ($recover){
             $this->linkData = $data;
@@ -255,8 +254,9 @@ class HtmlPrase
     /**
      * 获取连接数据
      *
+     * @return array
      */
-    public function getLinkData()
+    public function getLinkData(): array
     {
         return $this->linkData;
     }
@@ -264,11 +264,11 @@ class HtmlPrase
     /**
      * 重置解析数据
      *
-     *
      */
-    public function clear()
+    public function clear(): HtmlParse
     {
         $this->sourceHtml = '';
+        $this->sourceHtmlByte = '';
         $this->tags = [];
         $this->tagNum = 0;
 
@@ -286,7 +286,7 @@ class HtmlPrase
     /**
      * 获取所有解析的标签
      */
-    public function getTags()
+    public function getTags(): array
     {
         return $this->tags;
     }
@@ -311,9 +311,10 @@ class HtmlPrase
      *
      * @param string $filename 文件名称
      *
-     * @return void
+     * @return HtmlParse
+     * @throws HtmlParseException
      */
-    public function loadTemplate($filename)
+    public function loadTemplate(string $filename):HtmlParse
     {
         // 清除旧数据
         $this->clear();
@@ -332,23 +333,25 @@ class HtmlPrase
      *
      * @param string $string 需要解析的字符串
      *
-     * @return void
+     * @return HtmlParse
+     * @throws HtmlParseException
      */
-    public function loadSource($string)
+    public function loadSource(string $string): HtmlParse
     {
         $this->sourceHtml = $string;
 
         // 渲染标记处理
-        $lenth = (int) ceil(strlen($this->sourceHtml) / self::BITS_IN_BYTE);
-        $this->sourceHtmlByte = str_repeat(chr(0), $lenth);
+        $length = (int) ceil(strlen($this->sourceHtml) / self::BITS_IN_BYTE);
+        $this->sourceHtmlByte = str_repeat(chr(0), $length);
 
         return $this->parseTemplate();
     }
 
     /**
      * 解析模板文件
+     * @throws HtmlParseException
      */
-    public function parseTemplate()
+    public function parseTemplate():HtmlParse
     {
         // 开始标签 {标识:
         $tagStartAll = $this->tagStart . $this->nameSpace . ':';
@@ -364,7 +367,7 @@ class HtmlPrase
 
         // 长度过短，不执行解析
         if ($sourceLen <= $tagStartAllLen + 3){
-            return;
+            return $this;
         }
 
         // 标签处理截断标识
@@ -399,8 +402,7 @@ class HtmlPrase
 
             // 模板名称为空
             if (! $tmpTagName){
-                throw new HtmlPraseException('在位置'.$this->position($posCur) . '未检测到标签名称！');
-                break;
+                throw new HtmlParseException('在位置'.$this->position($posCur) . '未检测到标签名称！');
             }
 
             $i = $posCur + $tagStartAllLen;
@@ -413,11 +415,7 @@ class HtmlPrase
             $pos2 = strpos($this->sourceHtml, $tagStartAll, $i); // {EOL:
             $pos3 = strpos($this->sourceHtml, $tagFull, $i);     // {/EOL:x}
 
-//            dump($tagEnd, $tagStartAll, $tagFull, '=======');
-//            dump($pos1, $pos2, $pos3, '------');
-
             // 没有匹配 {/EOL:x}  或 /} 比 {EOL: {/EOL:x}  位置更靠前
-            $len = 0;
             if ($pos3 === false || (is_numeric($pos1) && $pos1 < $pos2 && $pos1 < $pos3)){
                 $posEnd = $pos1;
                 $len = $posEnd + strlen($tagEnd);
@@ -428,7 +426,7 @@ class HtmlPrase
             }
 
             if (! $len){
-                throw new HtmlPraseException('标签 "'.$tmpTagName.'"错误（'.$this->position($posCur) . '）！');
+                throw new HtmlParseException('标签 "'.$tmpTagName.'"错误（'.$this->position($posCur) . '）！');
             }
 
             $i = $len;
@@ -445,20 +443,18 @@ class HtmlPrase
                 $$tmpType .= $this->sourceHtml[$j];
             }
 
-//            dump($tmpTagName);
-//            dump($attribute, $innerText);
             $tagObject = new Tag();
             $tagObject->setSource($attribute);
 
             if ($tagObject->tagName){
                 // 检测标签是否支持
                 if ($this->isCheck && !in_array($tagObject->tagName, $this->inTags) && !array_key_exists($tagObject->tagName, $tags)){
-                    throw new HtmlPraseException('标签 "'.$tagObject->tagName.'"暂不支持 ('.$this->position($posCur) . ')！');
+                    throw new HtmlParseException('标签 "'.$tagObject->tagName.'"暂不支持 ('.$this->position($posCur) . ')！');
                 }
 
                 // 检测标签没有属性的情况
                 if ($this->nameSpace != 'field' && count($tagObject->getAttributes()) == 0){
-                    throw new HtmlPraseException('标签 "'.$tagObject->tagName.'"未填写属性值 ('.$this->position($posCur) . ')！');
+                    throw new HtmlParseException('标签 "'.$tagObject->tagName.'"未填写属性值 ('.$this->position($posCur) . ')！');
                 }
 
                 $this->tagNum++;
@@ -480,7 +476,7 @@ class HtmlPrase
      * 位置转换
      * 将字符串中的位置 转换为 几行几列
      */
-    private function position(int $pos)
+    private function position(int $pos): string
     {
         // 行数
         $lineNum = substr_count($this->sourceHtml, "\n", 0, $pos) + 1;
@@ -496,9 +492,11 @@ class HtmlPrase
 
     /**
      * 渲染生成页面
-     * @param $page 当前页数
+     * @param int $pageIndex 当前页数
+     * @return string
+     * @throws HtmlParseException
      */
-    public function fetch(int $pageIndex = 1)
+    public function fetch(int $pageIndex = 1): string
     {
         // 未解析到属性
         if (! $this->tagNum) return $this->sourceHtml;
@@ -512,7 +510,6 @@ class HtmlPrase
         // 对tag进行渲染
         $html = '';
         $nextPos = 0;
-        $isPage = 0;
         foreach ($this->tags as $tag){
 
             // 内置标签处理
@@ -567,8 +564,7 @@ class HtmlPrase
                 }
 
                 // 获取数据
-                $isReplce = $tag->tagName == "page" ? false : true;
-                $tag->assign($data, [], $isReplce);
+                $tag->assign($data, [], !($tag->tagName == "page"));
             }
 
             $html .= substr($this->sourceHtml, $nextPos, $tag->posStart-$nextPos);
@@ -592,9 +588,11 @@ class HtmlPrase
     /**
      * 保存内容到指定文件
      * @param string $file
-     * @param string  $isRecoverHome 重写分页首页的文件名
+     * @param string $recoverHomeFile 重命名首页的名称
+     * @return bool
+     * @throws HtmlParseException
      */
-    public function saveTo($file, $recoverHomeFile = '')
+    public function saveTo(string $file, string $recoverHomeFile = ''): bool
     {
         $this->pageInfo['page_url'] = $file;
 
@@ -615,15 +613,15 @@ class HtmlPrase
         $this->clear();
 
         return (bool) array_search(false, $this->saveToResult);
-
     }
 
     /**
      * 设置模板解析定位
-     * @param $pos
+     * @param $posStart
      * @param $val
+     * @param int $posEnd
      */
-    private function setSourceHtmlByte($posStart, $val, $posEnd = 0)
+    private function setSourceHtmlByte($posStart, $val, int $posEnd = 0)
     {
         $val = (bool)$val;
 
@@ -657,14 +655,14 @@ class HtmlPrase
     /**
      * 获取模板位置是否解析
      * @param $pos
+     * @return bool
      */
-    private function getSourceHtmlByte($pos)
+    private function getSourceHtmlByte($pos): bool
     {
         $byteIndex = $this->posToByte($pos);
         $curByte = ord($this->sourceHtmlByte[$byteIndex]);
 
         return (bool) ($this->posToInByte($pos) & $curByte);
-
     }
 
     /**
@@ -672,7 +670,7 @@ class HtmlPrase
      * @param $pos
      * @return int
      */
-    private function posToByte($pos)
+    private function posToByte($pos): int
     {
         return (int) floor($pos / self::BITS_IN_BYTE);
     }
@@ -682,11 +680,8 @@ class HtmlPrase
      * @param $pos
      * @return int
      */
-    private function posToInByte($pos)
+    private function posToInByte($pos): int
     {
         return (int) pow(2, $pos % self::BITS_IN_BYTE);
     }
-
-
-
 }
