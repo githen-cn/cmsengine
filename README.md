@@ -136,13 +136,14 @@ $tpl->setNameSpace('eol', '{', '}')->loadTemplate('index.html');
 $html = $tpl->fetch();
 
 // 渲染后的html直接保存到文件()
-// 需要在config/filesystems.php中声明 local 的驱动
+// 需要在config/filesystems.php中声明 cms.php中定义 的 disk 驱动
 $tpl->saveTo('index.html');
 
 //分页调用,直接返回需要页面的html代码
 $html = $tpl->fetch(2);
 
-// 遍历生成文件, {page}将会生成对应的页码数，如果存在第二个参数，则首页将被重命名为此参数
+// 遍历生成文件, {page}将会生成对应的页码数，
+// 如果存在第二个参数，则首页的文件将为此参数的值，其它页的文件名不变
 $tpl->saveTo('aa/list{page}.html', 'new.html');
 
 ```
@@ -182,11 +183,6 @@ class Fields
 {
     /**
      * 缓存数据
-     * [
-     *      $site_id => [
-     *          'site' => Model
-     *      ]
-     * ]
      */
     private $cache;
 
@@ -228,11 +224,6 @@ class Lists
 {
     /**
      * 缓存数据
-     * [
-     *      $site_id => [
-     *          'site' => Model
-     *      ]
-     * ]
      */
     private $cache;
 
@@ -285,11 +276,6 @@ class Pages
 {
     /**
      * 缓存数据
-     * [
-     *      $site_id => [
-     *          'site' => Model
-     *      ]
-     * ]
      */
     private $cache;
 
@@ -326,6 +312,12 @@ class Pages
                 ->where('category_id', $linkData['category_id'])
                 ->skip(($page-1) * $tag->getAttribute('per'))
                 ->take($tag->getAttribute('per'))->get();
+            
+            // 伪造数据，为测试foreach标签    
+            $arclist = $arclist->map(function ($item, $key){
+                $item->setAttribute('test', ['a' => '1'.$item->title, 'b' =>'2'.$item->title]);
+                return $item;
+            });
 
             $data = [
                 'total' => (int)$count,  // 总条数
