@@ -3,6 +3,7 @@
 namespace Githen\CmsEngine;
 
 use Githen\CmsEngine\Exceptions\HtmlParseException;
+use Githen\CmsEngine\Lib\Functions;
 use Githen\CmsEngine\Lib\TagTrait;
 use Githen\CmsEngine\Lib\Tag;
 use Illuminate\Support\Facades\Storage;
@@ -124,6 +125,12 @@ class HtmlParse
      * @var bool
      */
     public $clearEnter = true;
+
+    /**
+     * 通用类处理对象
+     * @val Functions
+     */
+    private $commonFunction;
 
     /**
      * 分页数据
@@ -487,9 +494,6 @@ class HtmlParse
         return $lineNum.'行'.$colNum.'列';
     }
 
-
-    /***********数据渲染***************/
-
     /**
      * 渲染生成页面
      * @param int $pageIndex 当前页数
@@ -511,7 +515,6 @@ class HtmlParse
         $html = '';
         $nextPos = 0;
         foreach ($this->tags as $tag){
-
             // 内置标签处理
             if (in_array($tag->tagName, $this->inTags)){
                 $this->{'tag'.ucwords($tag->tagName)}($tag);
@@ -530,6 +533,11 @@ class HtmlParse
                 // 数据获取类
                 $tagObject = $this->app->make($tagConfig['target']);
                 $data = $tagObject->data($tag, $this->getLinkData());
+
+                // function方法处理
+                if ($functionName = $tag->getAttribute('function')){
+                    $data = $this->getFunctions($functionName, $data);
+                }
 
                 // 分页数据，处理分页数据
                 if ($tagConfig['type'] == 'page'){
@@ -555,7 +563,14 @@ class HtmlParse
                                 $tmpTag->assign($this->tagForeach($tmpTag, $item[$valKey] ?? ''));
                                 continue;
                             }
-                            $tmpTag->assign($item[$tmpTag->tagName] ?? '');
+
+                            // function方法处理
+                            $data = $item[$tmpTag->tagName] ?? '';
+                            if ($functionName = $tmpTag->getAttribute('function')){
+                                $data = $this->getFunctions($functionName, $data);
+                            }
+
+                            $tmpTag->assign($data);
                         }
                         return $tpl->fetch();
                     }, $tagConfig['type'] == 'page' ? $data['items']:$data);
@@ -613,6 +628,64 @@ class HtmlParse
         $this->clear();
 
         return (bool) array_search(false, $this->saveToResult);
+    }
+
+    /**
+     * 设置通用方法扩展
+     * @param Object|string $object
+     */
+    public function setFunctions($object): HtmlParse
+    {
+        // 加载类
+        if (! $this->commonFunction){
+            $this->commonFunction = new Functions();
+        }
+
+        if (is_string($object)){
+            $object = new $object();
+        }
+
+        if (is_object($object)){
+            $this->commonFunction->setExtFunctions($object);
+        }
+
+        return $this;
+    }
+    /**
+     * 通用方法
+     * @param $name
+     * @param $data
+     * @return mixed
+     */
+    public function getFunctions($name, $data)
+    {
+        // 名称解析
+        $name = trim($name);
+        preg_match_all("/\((.*?)\)/", $name, $params);
+
+        // 方法名称处理
+        $functionName = str_replace($params[0][0] ?? '', '', $name);
+
+        // 参数处理
+        if (!$params[1]){
+            $params[] = $data;
+        }else{
+            $params = explode(',', $params[1][0]);
+            $params = array_map(function ($item)use($data){
+                $item = trim($item, ' "\'');
+                if ($item == '@') return $data;
+                return $item;
+            }, $params);
+        }
+
+        try {
+            // 调用方法不存在时，直接返回原始值
+            $data = call_user_func([$this->commonFunction, $functionName], ...$params);
+        }catch (HtmlParseException $e){
+
+        }
+
+        return $data;
     }
 
     /**

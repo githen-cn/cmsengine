@@ -128,6 +128,11 @@ trait TagTrait {
             foreach ($tpl->getTags() as $tmpTag){
                 // 数组中有此索引值，优先使用，无则对 key,val进行赋值
                 $tmpVal = $val[$tmpTag->tagName] ?? ${$tmpTag->tagName};
+
+                if ($functionName = $tmpTag->getAttribute('function')){
+                    $tmpVal = $this->getFunctions($functionName, $tmpVal);
+                }
+
                 $tmpTag->assign($tmpVal, [], false);
             }
             $html .= $tpl->fetch();

@@ -14,7 +14,8 @@
         }
     ],
     "require": {
-        "illuminate/support": "^6.20"
+        "illuminate/support": "^6.20",
+        "ext-mbstring": "*"
     },
     "extra": {
         "laravel": {

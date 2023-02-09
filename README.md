@@ -123,6 +123,38 @@ return [
 > 
 > 则$resource_url 为 'https://www.test.com/10/' 或 'https://www.test.com/addd/'
 
+4. 标签处理方法
+
+* 针对每个标签，支持扩展方法对数据进行处理，格式如下
+```html
+{eol:global.resource_url function='limit(@, 10, ...)' /}
+```
+
+* 引擎已内置了部分数据处理的方法如下
+
+```html
+说明 ：限长处理
+举例：limit(@, 3, '...')
+参数说明:第一个： @ 固定写法，执行时被替换为实际值
+        第二个： 最长长度，非必填，默认15
+        第三个：截断后追加字符，非必填，默认...
+
+```
+
+* 扩展方法
+ 
+内置方法不足以满足数据处理或其它需求时，支持扩展自定义的方法，可在模板进行fetch或saveTo的时候，通过注入类的方式实现，代码如下：
+```php
+$tpl = clone app('html.tpl');
+
+// 参数支持类名或实例化后的类
+// 若标签标记的方法名为abc, {eol:global.resource_url function='abc(@)' /}
+// 那么在此类中必须有abc方法，并且参数要兼容模板中配置的abc的参数
+$tpl->->setFunctions(Functions::class);
+```
+
+
+
 
 ## 使用举例
 
