@@ -56,7 +56,7 @@ return [
 2. 对列表/分页进行渲染
 > {eol:arclist id=1 row=60 order='desc'}
 > 
->  &lt;li&gt;[field:title]&lt;/li&gt;
+>  &lt;li&gt;[field:title/]&lt;/li&gt;
 > 
 >  {/eol:tag}
 > 
@@ -77,19 +77,19 @@ return [
 > 
 > {eol:foreach array="field:category"}
 > 
-> [field:key] -- [field:val]
+> [field:key/] -- [field:val/]
 > 
 > {/eol:foreach}
 > 
 > array: 需要遍历的数组
 > 
-> 1. 支持数组索引的方式调用 [field:index]
+> 1. 支持数组索引的方式调用 [field:index/]
 > 
 > 2. 使用内置标签,前提是数组中不存在 key/val 两个索引 
 >
- >> [field:key]：获取数组索引
+ >> [field:key/]：获取数组索引
  >> 
- >> [field:val]：获取数组值（字符串，整形）
+ >> [field:val/]：获取数组值（字符串，整形）
 > 
 
 * global
