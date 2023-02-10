@@ -679,6 +679,10 @@ class HtmlParse
         }
 
         try {
+
+            // 加载内置functions
+            $this->setFunctions(null);
+
             // 调用方法不存在时，直接返回原始值
             $data = call_user_func([$this->commonFunction, $functionName], ...$params);
         }catch (HtmlParseException $e){
