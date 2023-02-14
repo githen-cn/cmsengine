@@ -622,7 +622,7 @@ class HtmlParse
                 $tmpFile = $tmpFile['dirname'] . '/'.$recoverHomeFile;
             }
 
-            $this->saveToResult[$tmpFile] = Storage::disk($this->disk)->put($tmpFile, $html);
+            $this->saveToResult[$tmpFile] = Storage::disk($this->disk)->put($tmpFile, $html, 'public');
         }while(++$this->pageInfo['page_index'] <= $this->pageInfo['page_num']);
 
         $this->clear();
