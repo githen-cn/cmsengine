@@ -579,7 +579,7 @@ class HtmlParse
                 }
 
                 // 获取数据
-                $tag->assign($data, [], !($tag->tagName == "page"));
+                $tag->assign($data, [], !($tagConfig['type'] == 'page'));
             }
 
             $html .= substr($this->sourceHtml, $nextPos, $tag->posStart-$nextPos);
