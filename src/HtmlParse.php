@@ -622,7 +622,13 @@ class HtmlParse
                 $tmpFile = $tmpFile['dirname'] . '/'.$recoverHomeFile;
             }
 
-            $this->saveToResult[$tmpFile] = Storage::disk($this->disk)->put($tmpFile, $html, 'public');
+            // 检测文件是否存在
+            if(Storage::disk($this->disk)->has($tmpFile)){
+                $this->saveToResult[$tmpFile] = Storage::disk($this->disk)->put($tmpFile, $html);
+            }else{
+                $this->saveToResult[$tmpFile] = Storage::disk($this->disk)->put($tmpFile, $html, 'public');
+            }
+
         }while(++$this->pageInfo['page_index'] <= $this->pageInfo['page_num']);
 
         $this->clear();
