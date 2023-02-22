@@ -110,6 +110,8 @@ return [
 > {eol:global.tplid/}   //  模板id
 > 
 > {eol:global.resource_url/}  // 静态资源调用地址
+>
+> {eol:global.build_time/}  // 构建时间
 > 
 > 注：此地址是将domain和tplid进行组装，若tplid未设置或为0，则不拼接
 > 

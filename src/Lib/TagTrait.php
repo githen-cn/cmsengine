@@ -81,6 +81,7 @@ trait TagTrait {
      */
     public function tagGlobal($tag): HtmlParse
     {
+      
         switch ($tag->getAttribute('name')){
             case 'domain':
             case 'tplid':
@@ -100,7 +101,9 @@ trait TagTrait {
             case 'page_index':
             case 'page_url':
                 $val = $this->pageInfo[$tag->getAttribute('name')];
-
+                break;
+            case 'build_time':
+                $val = date('Y-m-d H:i:s');
                 break;
             default:
                 throw new HtmlParseException('标签 "'.$tag->tagName.'"属性值"'.$tag->getAttribute('name').'"不存在 ('.$this->position($tag->posStart) . ')！');
