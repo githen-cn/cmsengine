@@ -14,7 +14,8 @@ return [
         'tagmaxlen' => 60,
         'tolow' => TRUE,
         'home' => storage_path('template'),
-        'disk' => 'local'
+        'disk' => 'local',
+        'include_deep' => 3, // 默认3级
     ],
 
     'tags' => [
