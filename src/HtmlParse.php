@@ -198,7 +198,7 @@ class HtmlParse
             $this->setHomedir($options['home']);
         }
 
-        $this->includeDeep = (int)$options['include_deep']??3; // 设置include浓度
+        $this->includeDeep = (int)($options['include_deep']??3); // 设置include浓度
         $this->tagMaxLen = $options['tagmaxlen'] ?? 60;
         $this->toLow     = $options['tolow']     ?? TRUE;
 
