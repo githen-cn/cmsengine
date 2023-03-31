@@ -17,7 +17,6 @@ trait TagTrait {
      */
     private $tplid = '';
 
-
     /**
      * 内置标签
      */
@@ -26,6 +25,13 @@ trait TagTrait {
         'global',   // 全局属性标签
         'foreach',  // 遍历
     ];
+
+    /**
+     * include标签深度
+     * @var array
+     */
+    private $includeInfo = [];
+
 
 
     /**
@@ -67,9 +73,55 @@ trait TagTrait {
 
         // 替换为html
         $tpl = clone $this;
+
+        // 累加深度值
+        $tpl->includeAppend($fileName);
+        if ($tpl->includeCount() > $this->includeDeep){
+            $tag->assign('标签：include引用超过'.$this->includeDeep.'级');
+            return $this;
+        }
+
         $tag->assign($tpl->clear()->loadTemplate($fileName)->fetch());
         unset($tpl);
 
+        return $this;
+    }
+
+    /**
+     * 追加统计信息
+     * @param $fileName 加载文件名
+     * @return $this
+     */
+    public function includeAppend($fileName)
+    {
+        // 首次加载
+        if (!$this->includeInfo){
+            $this->includeInfo = ['count' => 1, 'track' => [$fileName]];
+            return $this;
+        }
+
+        //累加计数
+        $this->includeInfo['count']++;
+        $this->includeInfo['track'][] = $fileName;
+        return $this;
+    }
+
+    /**
+     * 返回深度
+     * @return int|mixed
+     */
+    public function includeCount()
+    {
+        return $this->includeInfo['count']??0;
+    }
+
+    /**
+     * 清除统计信息
+     * @return $this
+     */
+    public function includeClean()
+    {
+        $this->includeInfo = [];
         return $this;
     }
 
@@ -81,7 +133,7 @@ trait TagTrait {
      */
     public function tagGlobal($tag): HtmlParse
     {
-      
+
         switch ($tag->getAttribute('name')){
             case 'domain':
             case 'tplid':

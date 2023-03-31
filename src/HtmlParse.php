@@ -127,6 +127,12 @@ class HtmlParse
     public $clearEnter = true;
 
     /**
+     * include深度值
+     * @var int
+     */
+    private $includeDeep = 3;
+
+    /**
      * 通用类处理对象
      * @val Functions
      */
@@ -143,7 +149,6 @@ class HtmlParse
         'page_index' => 1,  // 当前第几页
         'page_url' => '',  // 分页规则
     ];
-
 
     /**
      * 构建引擎所需要的配置信息
@@ -193,6 +198,7 @@ class HtmlParse
             $this->setHomedir($options['home']);
         }
 
+        $this->includeDeep = (int)$options['include_deep']??3; // 设置include浓度
         $this->tagMaxLen = $options['tagmaxlen'] ?? 60;
         $this->toLow     = $options['tolow']     ?? TRUE;
 
